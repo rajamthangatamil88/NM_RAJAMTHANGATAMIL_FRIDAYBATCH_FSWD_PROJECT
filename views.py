@@ -1,71 +1,47 @@
 from django.shortcuts import render, redirect
-from django.contrib import messages, auth
-from django.contrib.auth.models import User
-from contacts.models import Contact
-from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from .models import Contact
+# from django.core.mail import send_mail
+# from django.contrib.auth.models import User
+
 
 # Create your views here.
-
-def login(request):
+def inquiry(request):
     if request.method == 'POST':
-        username = request.POST['username']
-        password = request.POST['password']
-
-        user = auth.authenticate(username=username, password=password)
-
-        if user is not None:
-            auth.login(request, user)
-            messages.success(request, 'You are now logged in.')
-            return redirect('dashboard')
-        else:
-            messages.error(request, 'Invalid login credentials')
-            return redirect('login')
-    return render(request, 'accounts/login.html')
-
-def register(request):
-    if request.method == 'POST':
-        firstname = request.POST['firstname']
-        lastname = request.POST['lastname']
-        username = request.POST['username']
+        car_id = request.POST['car_id']
+        car_title = request.POST['car_title']
+        user_id = request.POST['user_id']
+        first_name = request.POST['first_name']
+        last_name = request.POST['last_name']
+        customer_need = request.POST['customer_need']
+        city = request.POST['city']
+        state = request.POST['state']
         email = request.POST['email']
-        password = request.POST['password']
-        confirm_password = request.POST['confirm_password']
-
-        if password == confirm_password:
-            if User.objects.filter(username=username).exists():
-                messages.error(request, 'Username already exists!')
-                return redirect('register')
-            else:
-                if User.objects.filter(email=email).exists():
-                    messages.error(request, 'Email already exists!')
-                    return redirect('register')
-                else:
-                    user = User.objects.create_user(first_name=firstname, last_name=lastname, email=email, username=username, password=password)
-                    auth.login(request, user)
-                    messages.success(request, 'You are now logged in.')
-                    return redirect('dashboard')
-                    user.save()
-                    messages.success(request, 'You are registered successfully.')
-                    return redirect('login')
-        else:
-            messages.error(request, 'Password do not match')
-            return redirect('register')
-    else:
-        return render(request, 'accounts/register.html')
+        phone = request.POST['phone']
+        message = request.POST['message']
 
 
-@login_required(login_url = 'login')
-def dashboard(request):
-    user_inquiry = Contact.objects.order_by('-create_date').filter(user_id=request.user.id)
-    # count = Contact.objects.order_by('-create_date').filter(user_id=request.user.id).count()
+        # if request.user.is_authenticated:
+        #     user_id = request.user.id
+        #     has_contacted = Contact.objects.all().filter(car_id=car_id, user_id=user_id)
+        #     if has_contacted:
+        #         messages.error(request, 'You have already made an inquiry about this car. Please wait until we get back to you.')
+        #         return redirect('/cars/'+car_id)
 
-    data = {
-        'inquiries': user_inquiry,
-    }
-    return render(request, 'accounts/dashboard.html', data)
+        contact = Contact(car_id=car_id, car_title=car_title, user_id=user_id,
+        first_name=first_name, last_name=last_name, customer_need=customer_need, city=city,
+        state=state, email=email, phone=phone, message=message)
 
-def logout(request):
-    if request.method == 'POST':
-        auth.logout(request)
-        return redirect('home')
-    return redirect('home')
+        # admin_info = User.objects.get(is_superuser=True)
+        # admin_email = admin_info.email
+        # send_mail(
+        #         'New Car Inquiry',
+        #         'You have a new inquiry for the car ' + car_title + '. Please login to your admin panel for more info.',
+        #         'harribdhr@gmail.com',
+        #         [admin_email],
+        #         fail_silently=False,
+        #     )
+
+        contact.save()
+        messages.success(request, 'Your request has been submitted, we will get back to you shortly.')
+        return redirect('/cars/'+car_id)
